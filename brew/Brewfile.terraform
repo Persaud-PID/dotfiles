@@ -1,0 +1,5 @@
+brew "tfsec"
+brew "grep"
+brew "terraform-docs"
+brew "opentofu"
+brew "terragrunt"

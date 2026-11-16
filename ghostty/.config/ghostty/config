@@ -1,0 +1,3 @@
+# cmux reads Ghostty terminal preferences; app settings live in cmux/cmux.json.
+theme = Catppuccin Mocha
+font-family = MesloLGS Nerd Font Mono

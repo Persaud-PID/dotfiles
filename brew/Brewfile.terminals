@@ -1,0 +1,4 @@
+brew "tmux"
+brew "diffutils"
+# The macOS cask is disabled. terminals-setup.sh builds the normal Cargo release.
+cask "font-hack-nerd-font"

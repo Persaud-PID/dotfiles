@@ -1,2 +1,8 @@
 # MacOS files
 .DS_Store
+*.cmux-write.lock
+.dotfiles_backup_*/
+**/.zsh/secrets.env
+**/.zsh/aws-profile.zsh
+**/.zsh/local.zsh
+**/lua/config.local.lua

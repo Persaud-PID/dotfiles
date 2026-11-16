@@ -1,0 +1,7 @@
+brew "awscli"
+brew "kubectl"
+brew "kustomize"
+brew "k9s"
+brew "kubeconform"
+brew "helm@3", link: false
+brew "sops"

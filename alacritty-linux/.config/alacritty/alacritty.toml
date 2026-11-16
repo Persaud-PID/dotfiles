@@ -1,0 +1,58 @@
+# Ported from catpaladin/dotfiles YAML for current Alacritty.
+[window]
+dynamic_padding = true
+decorations = "none"
+startup_mode = "Windowed"
+opacity = 0.95
+
+[window.dimensions]
+columns = 140
+lines = 50
+
+[window.position]
+x = 75
+y = 75
+
+[window.padding]
+x = 5
+y = 5
+
+[font]
+size = 11.0
+
+[font.normal]
+family = "Hack Nerd Font"
+style = "Regular"
+
+[font.bold]
+family = "Hack Nerd Font"
+style = "Bold"
+
+[font.italic]
+family = "Hack Nerd Font"
+style = "Italic"
+
+[font.offset]
+x = 0
+y = 0
+
+[general]
+import = [
+    "~/.config/alacritty/themes/tokyo-night-storm.toml",
+]
+
+[terminal.shell]
+program = "/usr/bin/tmux"
+
+[colors]
+draw_bold_text_with_bright_colors = true
+
+[keyboard]
+bindings = [
+    { key = "N", mods = "Control|Shift", action = "SpawnNewInstance" },
+    { key = "F10", mods = "Control", action = "ResetFontSize" },
+    { key = "NumpadEqual", mods = "Control", action = "IncreaseFontSize" },
+    { key = "NumpadAdd", mods = "Control", action = "IncreaseFontSize" },
+    { key = "NumpadSubtract", mods = "Control", action = "DecreaseFontSize" },
+    { key = "Q", mods = "Control|Shift", action = "Quit" },
+]

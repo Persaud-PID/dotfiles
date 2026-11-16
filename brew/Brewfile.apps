@@ -1,0 +1,5 @@
+tap "manaflow-ai/cmux"
+cask "cmux"
+cask "clocker"
+cask "obsidian"
+cask "font-meslo-lg-nerd-font"
