@@ -1,3 +1,4 @@
+# Neovim config is versioned separately and pinned here.
 [submodule "nvim/.config/nvim"]
 	path = nvim/.config/nvim
-	url = https://github.com/catpaladin/nvim-config.git
+	url = https://github.com/Persaud-PID/nvim-config.git

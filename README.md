@@ -1,15 +1,16 @@
-# Laptop Dotfiles
+# Dotfiles
 
 Personal macOS/Linux development environment, organized like
 [catpaladin/dotfiles](https://github.com/catpaladin/dotfiles): GNU Stow packages,
-modular Zsh, focused provisioning scripts, and a pinned Neovim submodule.
-cmux is the terminal; Catppuccin Mocha is the terminal/prompt palette.
+modular Zsh, focused provisioning scripts, and your own Neovim config pinned as a
+Git submodule.
+cmux and Starship use the TokyoNight Night palette.
 
 ## Quick Start
 
 ```sh
-git clone --recurse-submodules <your-Laptop-Setup-repo-url>
-cd Laptop-Setup
+git clone --recurse-submodules https://github.com/Persaud-PID/dotfiles.git
+cd dotfiles
 brew install stow
 ./setup.sh --dry-run --company zscaler
 ./setup.sh --company zscaler
@@ -20,8 +21,11 @@ It never adopts local files into Git, installs
 software, runs agent hooks, or changes your login shell. Existing conflicts move
 to a private `~/.dotfiles_backup_<timestamp>.*` directory. Repeated runs are
 idempotent. Use `--company chewy`, `--company none`, or omit the option to retain
-the currently selected company. Use `--skip-nvim` to link everything else without
-initializing the Neovim submodule. `--target DIR` supports an isolated preview/test.
+the currently selected company. Neovim links to the `nvim/.config/nvim` submodule
+when initialized; otherwise setup warns and leaves the existing config untouched.
+Use `--nvim-config DIR` or `NVIM_CONFIG_DIR` for another location, or
+`--skip-nvim` to leave Neovim untouched. `--target DIR` supports an isolated
+preview/test.
 Company definitions mirror `~/.zsh/companies/` through the `company/` Stow package.
 The selected definition is loaded through `~/.zsh/company.zsh`. Open a new shell
 after switching companies. Setup backs up owned links from the former
@@ -33,6 +37,7 @@ if absent):
 ```sh
 ./scripts/install-core-tools.sh   # shell, plugins, prompt, Git and shared CLI tools
 ./scripts/typescript-dev.sh       # NVM, Node/npm/npx, Bun, Yarn and TypeScript tools
+./scripts/agents-setup.sh         # macOS: pi, Devin CLI, Gemini CLI (after typescript-dev.sh)
 ./scripts/python-dev.sh           # uv, managed Python, Python tools; pipx/SSO on macOS
 ./scripts/rust-dev.sh             # Rust/Cargo; also runs python-dev.sh and rye-dev.sh
 ./scripts/rye-dev.sh              # standalone legacy Rye compatibility; prefer uv
@@ -41,8 +46,8 @@ if absent):
 ./scripts/kubernetes-dev.sh       # macOS: AWS, Kubernetes, Helm, Krew and helpers
 ./scripts/containers-dev.sh       # macOS: Docker/Compose + Colima; does not start a VM
 ./scripts/terminals-setup.sh      # tmux/TPM, Alacritty, Hack Nerd Font
-./scripts/neovim-setup.sh --company zscaler # macOS: editor dependencies, links and plugins
-./scripts/cmux-setup.sh           # macOS: apps, agent hooks, global cmux skills
+./scripts/neovim-setup.sh --company zscaler # macOS: editor dependencies and external config link
+./scripts/cmux-setup.sh           # macOS: cmux/Obsidian/Ollama, agent CLIs/hooks and cmux skills
 
 # Linux only; also called by terminals-setup.sh on Linux:
 # ./scripts/install-font-linux.sh # Hack and Noto Nerd Fonts
@@ -60,6 +65,27 @@ do not run it just to update symlinks. Installers use declarative `brew/Brewfile
 manifests without bulk upgrades, and never remove stale Helm plugins or start
 Docker/Colima. Homebrew tap trust is not changed automatically; if Homebrew refuses
 the cmux tap, review it and follow Homebrew's scoped trust instructions.
+
+`cmux-setup.sh` also runs `agents-setup.sh`, including during the full install.
+The agent installer uses the NVM default runtime, installs Pi from
+`@earendil-works/pi-coding-agent` (with `--ignore-scripts`) and Gemini from
+`@google/gemini-cli`, and uses Homebrew's `devin-cli` cask when Devin is absent.
+Existing agents, including desktop-bundled Devin, are kept; cmux-only shims do
+not count as installed agents. Authentication stays manual.
+
+cmux hook setup is restricted to **Pi and Gemini**, after their CLIs are available.
+Claude uses cmux's automatic wrapper integration. Devin and Ollama have no
+dedicated `cmux hooks setup` target. Setup does not scan all agents on `PATH` or
+uninstall other hooks automatically.
+
+The cmux installer also sets `ApplePressAndHoldEnabled=false` for
+`com.cmuxterm.app` only, so holding a key repeats it instead of opening the macOS
+accent picker.
+
+The app manifest includes Obsidian and Ollama's desktop app/CLI. Homebrew renamed
+the `ollama` cask to `ollama-app`, so the manifest uses the current name
+(`brew install --cask ollama-app`). Setup does not launch Ollama, start its server,
+or download models.
 
 The macOS cmux/terminal installers migrate manually installed Meslo/Hack Nerd
 Fonts before Homebrew manages them. Only the requested Nerd Font family's TTF
@@ -86,7 +112,7 @@ Run `cmux reload-config` **inside cmux** for terminal/config changes if necessar
 setup.sh                         # GNU Stow, backups, company choice, nvim link
 zsh/.zshrc                       # sources ~/.zsh.d/*.zsh in numeric order
 zsh/.zsh.d/                      # paths, core, runtimes, completions, cloud helpers
-starship/.config/starship.toml   # Catppuccin prompt; Git stays in cmux sidebar
+starship/.config/starship.toml   # TokyoNight Night prompt; Git stays in cmux sidebar
 cmux/.config/cmux/cmux.json      # native app/sidebar preferences
 ghostty/.config/ghostty/config   # terminal theme and Nerd Font
 git/.config/git/                 # Git defaults included from private ~/.gitconfig
@@ -95,7 +121,7 @@ tmux/.tmux.conf                  # Tokyo Night, Ctrl-F prefix, TPM plugins
 bash/.bashrc                     # reference Bash fallback
 alacritty-{darwin,linux}/         # current TOML, all palettes, original YAML
 pi-powerline-footer/theme.json  # same footer theme asset as the reference
-nvim/.config/nvim/               # catpaladin/nvim-config git submodule; not stowed
+nvim/.config/nvim/               # Persaud-PID/nvim-config Git submodule; not stowed
 brew/Brewfile*                   # package inventories by workflow
 scripts/lib/common.sh            # shared provisioning helpers
 scripts/*-dev.sh                 # optional language/cloud/container setup
@@ -109,6 +135,9 @@ writable config directories real, with only individual files symlinked. This
 prevents cmux locks, private shell state, and caches from landing in the repo.
 Settings saved to the linked cmux JSON file become normal Git diffs; runtime
 sessions, browser data, and credentials are not source-controlled.
+Neovim configuration belongs to
+[`Persaud-PID/nvim-config`](https://github.com/Persaud-PID/nvim-config), included
+here as the `nvim/.config/nvim` submodule and linked directly to `~/.config/nvim`.
 
 ## Neovim In cmux
 
@@ -118,11 +147,47 @@ and executes the nonempty result on return. Treat this as an execution shortcut,
 not just a preview. cmux's own built-in file viewer remains unchanged.
 
 Requirements: Neovim **0.12+**, `tree-sitter-cli`, Git, `cc`/Xcode Command Line
-Tools, Node/npm, `fd`, `ripgrep`, `lazygit`, and a Nerd Font. The Neovim installer
-checks the version, restores locked plugin versions (Lazy itself bootstraps its
-upstream stable branch), and preserves the original lockfile. Initial plugin,
-parser, and Mason downloads require network access. Run `:checkhealth` and
-`:Mason` inside Neovim to check language tools.
+Tools, Node/npm, `fd`, `ripgrep`, `lazygit`, and a Nerd Font. The macOS Neovim
+installer installs system dependencies, checks the version without loading user
+configuration, and calls the config-linking setup. It does not clone/update the
+config repository, run Lazy/Mason, or change `lazy-lock.json`. Plugin, parser and
+language-tool installation belongs to your Neovim configuration and may require
+network access when you open the editor. Use `:checkhealth`, `:Lazy` and `:Mason`
+there.
+
+The home-mirrored layout is:
+
+```text
+dotfiles/
+  nvim/.config/nvim/            # separate Git repo: init.lua, lua/, lazy-lock.json
+```
+
+The default needs no extra setup arguments. If you cloned without
+`--recurse-submodules`, initialize the pinned config explicitly:
+
+```sh
+git submodule update --init --recursive
+./setup.sh
+```
+
+For a different checkout location (including a standalone clone):
+
+```sh
+./setup.sh --nvim-config "$HOME/src/nvim-config"
+# Equivalent environment override; an explicit --nvim-config takes precedence:
+NVIM_CONFIG_DIR="$HOME/src/nvim-config" ./setup.sh
+
+# Install Neovim/system dependencies and link the same external checkout:
+./scripts/neovim-setup.sh --nvim-config "$HOME/src/nvim-config"
+# The full macOS installer also accepts the override:
+./scripts/install-all.sh --company zscaler --nvim-config "$HOME/src/nvim-config"
+```
+
+A missing/uninitialized checkout or directory without `init.lua`/`init.vim`
+produces a warning and leaves `~/.config/nvim` unchanged, including existing or
+broken symlinks. Setup does not initialize or update submodules automatically.
+Valid link replacements are backed up first, and repeat runs are idempotent.
+`--skip-nvim` skips Neovim linking even if a valid checkout is available.
 
 Upstream uses **Tokyo Night Storm** and lualine inside the editor. It enables
 Go, TypeScript, Python and Terraform support; AI integrations are off by default.
@@ -133,19 +198,24 @@ It does not replace the shell prompt with a persistent terminal status bar.
 - `jk`: exit insert mode; `:wq`: save and quit; `:q!`: quit without saving.
 - `:Lazy`: plugins; `:Mason`: language servers/formatters.
 
-Change optional upstream settings in
-`~/.config/nvim/lua/config.local.lua` (ignored by the submodule), then `:Lazy sync`.
-To keep customizations versioned, use your own fork/branch in the submodule;
-parent commits record its revision, not its internal uncommitted edits.
+Commit editor settings, themes, plugins and `lazy-lock.json` in the `nvim-config`
+repository; dotfiles records only its commit pointer. Optional machine-local
+upstream settings can still use `~/.config/nvim/lua/config.local.lua`, which that
+repo ignores. Use `:Lazy sync` when you intentionally want to update plugins.
+
+Your standalone `nvim-config` clone and this submodule are separate checkouts,
+not symlinks to each other. Edits in one do not automatically appear in the other.
+You can keep editing/pushing from the standalone clone, then update the submodule
+and commit its new pointer in dotfiles.
 
 Updating is explicit, never a side effect of `setup.sh`:
 
 ```sh
-git submodule update --init --recursive   # restore pinned revision after cloning
-# To intentionally update upstream:
-git -C nvim/.config/nvim fetch origin
-git -C nvim/.config/nvim merge --ff-only origin/main
-# Review before committing the new gitlink in this repo.
+# After committing/pushing the desired changes in nvim-config:
+git submodule update --remote -- nvim/.config/nvim
+git diff --submodule -- nvim/.config/nvim
+git add nvim/.config/nvim
+# Review and commit the updated config pointer in dotfiles.
 ```
 
 ## Preserved Workflows
@@ -164,8 +234,9 @@ Provision only the pieces you want:
 | `terminals-setup.sh` | tmux, TPM/sensible/resurrect, Alacritty and Hack Nerd Font |
 | `kubernetes-dev.sh` | AWS CLI, kubectl, kustomize, k9s, kubeconform, Helm 3 + diff/secrets, Krew, fubectl |
 | `containers-dev.sh` | Docker CLI/Compose and Colima; no VM start |
-| `cmux-setup.sh` | cmux, Clocker, Obsidian, Meslo font, detected agent hooks and global cmux skills |
-| `neovim-setup.sh` | editor dependencies, setup/linking, locked plugin restore |
+| `agents-setup.sh` | macOS: Pi, Devin CLI and Gemini CLI; keeps existing agents and leaves login manual |
+| `cmux-setup.sh` | cmux, Clocker, Obsidian, Ollama app/CLI, Meslo font, agent CLIs, Pi/Gemini hooks and global cmux skills |
+| `neovim-setup.sh` | Neovim/system dependencies and external config linking; no plugin or lockfile provisioning |
 
 AWS profile helpers (`useprof`, `saveprof`, `unsetAWS`), Kubernetes/Helm helpers,
 Git/PR commands, and company helpers are retained. `saveprof` now persists only
@@ -216,6 +287,8 @@ not to config-linking setup.
 
 ```sh
 bash tests/dotfiles-setup.sh
+bash tests/neovim-setup.sh
+bash tests/agents-setup.sh
 bash tests/provisioning-helpers.sh
 bash tests/font-cask.sh
 zsh -f tests/gitlab-token-rotation.zsh

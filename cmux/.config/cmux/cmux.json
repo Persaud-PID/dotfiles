@@ -3,7 +3,7 @@
   "schemaVersion": 1,
   "app": {
     "appearance": "dark",
-    "accentColor": "#b4befe"
+    "accentColor": "#7aa2f7"
   },
   "sidebarAppearance": {
     "matchTerminalBackground": true

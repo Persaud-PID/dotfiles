@@ -1,16 +1,16 @@
 "$schema" = "https://starship.rs/config-schema.json"
 
 add_newline = false
-palette = "catppuccin_mocha"
+palette = "tokyonight_night"
 format = """
-[](peach)\
+[](blue)\
 $directory\
 ($aws$kubernetes)\
 $line_break\
 $character"""
 
 [directory]
-style = "bg:peach fg:crust"
+style = "bg:blue fg:background"
 format = "[ $path ]($style)"
 truncation_length = 3
 truncation_symbol = "…/"
@@ -18,42 +18,24 @@ truncation_symbol = "…/"
 [aws]
 symbol = "AWS "
 format = "[](yellow)[ $symbol$profile ]($style)[](fg:yellow)"
-style = "bg:yellow fg:crust"
+style = "bg:yellow fg:background"
 
 [kubernetes]
 disabled = false
-format = "[](teal)[ K8s $context( / $namespace) ]($style)[](fg:teal)"
-style = "bg:teal fg:crust"
+format = "[](cyan)[ K8s $context( / $namespace) ]($style)[](fg:cyan)"
+style = "bg:cyan fg:background"
 
 [character]
-success_symbol = "[❯](bold mauve)"
+success_symbol = "[❯](bold magenta)"
 error_symbol = "[❯](bold red)"
-vimcmd_symbol = "[❮](bold teal)"
+vimcmd_symbol = "[❮](bold cyan)"
 
-[palettes.catppuccin_mocha]
-rosewater = "#f5e0dc"
-flamingo = "#f2cdcd"
-pink = "#f5c2e7"
-mauve = "#cba6f7"
-red = "#f38ba8"
-maroon = "#eba0ac"
-peach = "#fab387"
-yellow = "#f9e2af"
-green = "#a6e3a1"
-teal = "#94e2d5"
-sky = "#89dceb"
-sapphire = "#74c7ec"
-blue = "#89b4fa"
-lavender = "#b4befe"
-text = "#cdd6f4"
-subtext1 = "#bac2de"
-subtext0 = "#a6adc8"
-overlay2 = "#9399b2"
-overlay1 = "#7f849c"
-overlay0 = "#6c7086"
-surface2 = "#585b70"
-surface1 = "#45475a"
-surface0 = "#313244"
-base = "#1e1e2e"
-mantle = "#181825"
-crust = "#11111b"
+[palettes.tokyonight_night]
+background = "#1a1b26"
+foreground = "#c0caf5"
+blue = "#7aa2f7"
+cyan = "#7dcfff"
+green = "#9ece6a"
+magenta = "#bb9af7"
+red = "#f7768e"
+yellow = "#e0af68"

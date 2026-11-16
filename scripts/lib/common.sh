@@ -102,3 +102,9 @@ load_nvm() {
   source "$script"
   set -u
 }
+use_default_node() {
+  load_nvm
+  set +u
+  nvm use --silent default || die "Cannot select Node default; run scripts/typescript-dev.sh first."
+  set -u
+}

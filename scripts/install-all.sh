@@ -5,12 +5,14 @@ setup_args=("$@")
 while (( $# )); do
   case "$1" in
     --help|-h) "$REPO_DIR/setup.sh" --help; exit 0 ;;
-    --company)
-      [[ $# -ge 2 ]] || die "--company needs a name."
-      [[ "$2" == none || -f "$REPO_DIR/company/.zsh/companies/$2.zsh" ]] \
-        || die "Unknown company: $2"
+    --company|--nvim-config)
+      [[ $# -ge 2 && -n "$2" ]] || die "$1 needs a value."
+      if [[ "$1" == --company ]]; then
+        [[ "$2" == none || -f "$REPO_DIR/company/.zsh/companies/$2.zsh" ]] \
+          || die "Unknown company: $2"
+      fi
       shift 2 ;;
-    *) die "Use setup.sh for previews/alternate targets. install-all.sh accepts only --company NAME." ;;
+    *) die "Use setup.sh for previews/alternate targets. install-all.sh accepts --company NAME and --nvim-config DIR." ;;
   esac
 done
 for script in install-core-tools typescript-dev rust-dev go-dev terraform-dev terminals-setup; do

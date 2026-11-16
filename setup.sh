@@ -5,6 +5,7 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TARGET="$HOME"
 DRY_RUN=0
 SKIP_NVIM=0
+NVIM_CONFIG_DIR="${NVIM_CONFIG_DIR:-$REPO_DIR/nvim/.config/nvim}"
 COMPANY="${COMPANY_NAME:-}"
 BACKUP_DIR=""
 PACKAGES=(zsh starship cmux ghostty git company tmux bash)
@@ -16,18 +17,25 @@ esac
 
 usage() {
   cat <<'EOF'
-Usage: ./setup.sh [--dry-run] [--target DIR] [--company NAME|none] [--skip-nvim]
+Usage: ./setup.sh [--dry-run] [--target DIR] [--company NAME|none]
+                  [--nvim-config DIR] [--skip-nvim]
 Uses GNU Stow without --adopt; conflicting files are moved to a private backup.
 No packages, plugins, login-shell changes, or cmux hooks are installed here.
+Neovim config: --nvim-config overrides NVIM_CONFIG_DIR (default: nvim/.config/nvim).
+Missing configs are skipped without changing the existing Neovim configuration.
 EOF
 }
 while (( $# )); do
   case "$1" in
     --dry-run) DRY_RUN=1 ;;
     --skip-nvim) SKIP_NVIM=1 ;;
-    --target|--company)
+    --target|--company|--nvim-config)
       [[ $# -ge 2 && -n "$2" ]] || { usage >&2; exit 2; }
-      if [[ "$1" == --target ]]; then TARGET="$2"; else COMPANY="$2"; fi
+      case "$1" in
+        --target) TARGET="$2" ;;
+        --company) COMPANY="$2" ;;
+        --nvim-config) NVIM_CONFIG_DIR="$2" ;;
+      esac
       shift ;;
     --help|-h) usage; exit 0 ;;
     *) usage >&2; exit 2 ;;
@@ -113,11 +121,13 @@ if [[ ! -L "$TARGET/.config/laptop-setup" && ! -L "$old_companies" ]]; then
     fi
   done
 fi
-if (( ! SKIP_NVIM )) && [[ ! -f "$REPO_DIR/nvim/.config/nvim/init.lua" ]]; then
-  if (( DRY_RUN )); then
-    echo "Would initialize the pinned Neovim submodule."
+if (( ! SKIP_NVIM )); then
+  if [[ -f "$NVIM_CONFIG_DIR/init.lua" || -f "$NVIM_CONFIG_DIR/init.vim" ]]; then
+    NVIM_CONFIG_DIR="$(cd "$NVIM_CONFIG_DIR" && pwd -P)"
   else
-    git -C "$REPO_DIR" submodule update --init --recursive -- nvim/.config/nvim
+    printf 'Warning: No Neovim config at %s (expected init.lua or init.vim); leaving %s/.config/nvim untouched.\n' \
+      "$NVIM_CONFIG_DIR" "$TARGET" >&2
+    SKIP_NVIM=1
   fi
 fi
 
@@ -137,7 +147,7 @@ else
     --ignore='\.cmux-write\.lock$|(^|/)\.DS_Store$' --restow "${PACKAGES[@]}"
 fi
 if (( ! SKIP_NVIM )); then
-  link_config "$REPO_DIR/nvim/.config/nvim" "$TARGET/.config/nvim"
+  link_config "$NVIM_CONFIG_DIR" "$TARGET/.config/nvim"
 fi
 if [[ "$COMPANY" == none ]]; then
   backup "$TARGET/.zsh/company.zsh"

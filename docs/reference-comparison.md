@@ -9,7 +9,9 @@ on every machine.
 
 - GNU Stow package layout, `setup.sh`, ordered `.zsh.d` modules, shared script
   helpers, and focused development-environment installers.
-- Neovim submodule at `nvim/.config/nvim`, linked separately from Stow.
+- Neovim system dependencies and a pinned config submodule, linked separately
+  from Stow. It uses `Persaud-PID/nvim-config` at `nvim/.config/nvim` rather than
+  the reference's upstream remote; override with `--nvim-config`/`NVIM_CONFIG_DIR`.
 - `EDITOR`/`VISUAL`, edit-command-line widget, expanded history, fd-backed fzf,
   `ll`/`la`/`tree`, JSON viewing via jless, and a Go coverage helper.
 - Added missing dependency inventory for Stow, Neovim, tree-sitter CLI, fd,
@@ -33,11 +35,12 @@ on every machine.
 | Suffix aliases / grep / diff | Copied; GNU `gdiff` is used on macOS for colour compatibility. |
 | Ctrl-X Ctrl-E | Matches the edit-and-execute binding. Nonempty commands execute on return from the editor. |
 
-## Laptop-Setup Extras Retained In The Same Format
+## Dotfiles Extras Retained In The Same Format
 
 | Existing extra | New location |
 | --- | --- |
 | cmux settings, terminal theme/font, Starship | `cmux/`, `ghostty/`, `starship/` Stow packages |
+| User-owned Neovim config | `Persaud-PID/nvim-config` submodule linked to `~/.config/nvim`; explicit external overrides supported; no automatic submodule updates or plugin provisioning |
 | AWS profile and cloud helper functions | `zsh/.zsh.d/50-aws.zsh` |
 | Kubernetes/Helm functions | `zsh/.zsh.d/60-kubernetes.zsh` |
 | Git branch/PR workflows | `zsh/.zsh.d/70-git.zsh` |
@@ -54,12 +57,14 @@ on every machine.
 
 Unlike the reference setup, this installer never uses Stow `--adopt` or clones
 shell plugins during shell startup. It preflights directory conflicts, backs up
-files/symlinks, preserves private shell state, and never auto-updates submodule
-revisions. Unknown company names fail before linking. Runtime files and secrets
-do not belong in Stow packages.
+files/symlinks and preserves private shell state. It never initializes or updates
+Neovim submodules automatically, runs their plugin manager, or changes their
+lockfile. Missing/uninitialized configs are skipped without replacing an existing
+config. Unknown company names fail before linking. Runtime files and secrets do not belong in
+Stow packages.
 
 Practical impact: the earlier omissions did not prevent cmux or Neovim from
 working. The new additions change default runtime/tool resolution and interactive
 bindings; they do not migrate Terraform state or change cluster/cloud resources.
-Project version files and lockfiles should pin versions. cmux/Starship keep the
-existing Catppuccin palette; tmux/Alacritty/Neovim use upstream Tokyo Night.
+Project version files and lockfiles should pin versions. cmux and Starship use
+TokyoNight Night; tmux/Alacritty/Neovim use their upstream Tokyo Night variants.
