@@ -1,4 +1,3 @@
-# Ported from catpaladin/dotfiles YAML for current Alacritty.
 [window]
 dynamic_padding = true
 decorations = "full"
