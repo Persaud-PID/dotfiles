@@ -10,7 +10,6 @@ cmux and Starship use the TokyoNight Night palette.
 
 ```sh
 git clone --recurse-submodules https://github.com/Persaud-PID/dotfiles.git
-# Optional, private: clone your company-configs repository next to dotfiles.
 cd dotfiles
 brew install stow
 ./setup.sh --dry-run --company work
@@ -27,9 +26,11 @@ when initialized; otherwise setup warns and leaves the existing config untouched
 Use `--nvim-config DIR` or `NVIM_CONFIG_DIR` for another location, or
 `--skip-nvim` to leave Neovim untouched. `--target DIR` supports an isolated
 preview/test.
-Company definitions live in a separate private repository, not here. Clone it
-next to this checkout as `company-configs` (or pass `--company-dir DIR` /
-`COMPANY_CONFIG_DIR`); setup links each of its `*.zsh` files into
+Company definitions live in a separate private repository, not here. When a
+company is selected and its checkout is missing (`company-configs` next to this
+one, or `--company-dir DIR` / `COMPANY_CONFIG_DIR`), setup clones it from
+`COMPANY_CONFIG_REPO` (default `Persaud-PID/company-configs`); it never pulls an
+existing checkout. Setup links each of its `*.zsh` files into
 `~/.zsh/companies/`, so editing either path changes the same file. `--company NAME`
 links `~/.zsh/company.zsh` to `~/.zsh/companies/NAME.zsh`. Open a new shell after
 switching companies. Setup backs up links left by the former `company/` Stow

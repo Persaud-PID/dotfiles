@@ -8,6 +8,7 @@ SKIP_NVIM=0
 NVIM_CONFIG_DIR="${NVIM_CONFIG_DIR:-$REPO_DIR/nvim/.config/nvim}"
 COMPANY="${COMPANY_NAME:-}"
 COMPANY_DIR="${COMPANY_CONFIG_DIR:-}"
+COMPANY_REPO="${COMPANY_CONFIG_REPO:-https://github.com/Persaud-PID/company-configs.git}"
 BACKUP_DIR=""
 PACKAGES=(zsh starship cmux ghostty git tmux bash)
 case "$(uname -s)" in
@@ -25,7 +26,8 @@ No packages, plugins, login-shell changes, or cmux hooks are installed here.
 Neovim config: --nvim-config overrides NVIM_CONFIG_DIR (default: nvim/.config/nvim).
 Missing configs are skipped without changing the existing Neovim configuration.
 Company configs: --company-dir (or COMPANY_CONFIG_DIR) links each DIR/*.zsh into
-~/.zsh/companies/; default: a sibling company-configs checkout, when present.
+~/.zsh/companies/; default: a sibling company-configs checkout. When a company
+is selected and that checkout is missing, it is cloned from COMPANY_CONFIG_REPO.
 --company NAME then selects ~/.zsh/companies/NAME.zsh.
 EOF
 }
@@ -50,22 +52,32 @@ done
 command -v stow >/dev/null || { echo "Install GNU Stow first: brew install stow" >&2; exit 1; }
 [[ -d "$TARGET" ]] || { echo "Target directory must already exist: $TARGET" >&2; exit 1; }
 TARGET="$(cd "$TARGET" && pwd -P)"
-if [[ -z "$COMPANY_DIR" ]]; then
-  COMPANY_DIR="$(dirname "$REPO_DIR")/company-configs"
-  [[ -d "$COMPANY_DIR" ]] || COMPANY_DIR=none
-fi
-if [[ "$COMPANY_DIR" != none ]]; then
-  [[ -d "$COMPANY_DIR" ]] || { echo "Company config directory not found: $COMPANY_DIR" >&2; exit 2; }
-  COMPANY_DIR="$(cd "$COMPANY_DIR" && pwd -P)"
-fi
 if [[ -z "$COMPANY" && -L "$TARGET/.zsh/company.zsh" ]]; then
   COMPANY="$(basename "$(readlink "$TARGET/.zsh/company.zsh")" .zsh)"
 fi
+WANT_COMPANY=0
 if [[ -n "$COMPANY" && "$COMPANY" != none ]]; then
   case "$COMPANY" in *[!a-zA-Z0-9_-]*) echo "Invalid company name" >&2; exit 2 ;; esac
-  [[ -f "$TARGET/.zsh/companies/$COMPANY.zsh" || -f "$COMPANY_DIR/$COMPANY.zsh" ]] || {
-    echo "Unknown company: $COMPANY (add $COMPANY.zsh to the company config directory or use --company none)" >&2; exit 2;
-  }
+  WANT_COMPANY=1
+fi
+if [[ -z "$COMPANY_DIR" ]]; then
+  COMPANY_DIR="$(dirname "$REPO_DIR")/company-configs"
+  [[ -d "$COMPANY_DIR" ]] || (( WANT_COMPANY )) || COMPANY_DIR=none
+fi
+if [[ "$COMPANY_DIR" != none && ! -d "$COMPANY_DIR" ]]; then
+  (( WANT_COMPANY )) || { echo "Company config directory not found: $COMPANY_DIR" >&2; exit 2; }
+  if (( DRY_RUN )); then
+    printf 'Would clone %s into %s\n' "$COMPANY_REPO" "$COMPANY_DIR"
+  else
+    git clone --quiet "$COMPANY_REPO" "$COMPANY_DIR" || {
+      echo "Could not clone $COMPANY_REPO (authenticate with GitHub or pass --company-dir)" >&2; exit 1; }
+  fi
+fi
+[[ "$COMPANY_DIR" == none || ! -d "$COMPANY_DIR" ]] || COMPANY_DIR="$(cd "$COMPANY_DIR" && pwd -P)"
+if (( WANT_COMPANY )) && [[ ! -f "$TARGET/.zsh/companies/$COMPANY.zsh" ]]; then
+  if [[ "$COMPANY_DIR" == none ]] || [[ -d "$COMPANY_DIR" && ! -f "$COMPANY_DIR/$COMPANY.zsh" ]]; then
+    echo "Unknown company: $COMPANY (add $COMPANY.zsh to the company config directory or use --company none)" >&2; exit 2
+  fi
 fi
 
 backup() {

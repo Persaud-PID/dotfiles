@@ -68,5 +68,7 @@ if bash "$fixture/scripts/install-all.sh" --company missing --company-dir "$temp
   echo "FAIL: full installer accepted an unknown company" >&2
   exit 1
 fi
-[[ "$(command grep -c '^setup' "$TEST_CALLS")" == 3 ]]
+bash "$fixture/scripts/install-all.sh" --company work --company-dir "$temp/not cloned yet" > "$temp/company-clone-output"
+command grep -Fxq "setup <--company> <work> <--company-dir> <$temp/not cloned yet>" "$TEST_CALLS"
+[[ "$(command grep -c '^setup' "$TEST_CALLS")" == 4 ]]
 echo "PASS: Neovim system-only provisioning, full-install argument forwarding and version guard use mocks only"

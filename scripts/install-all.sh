@@ -17,8 +17,8 @@ while (( $# )); do
     *) die "Use setup.sh for previews/alternate targets. install-all.sh accepts --company NAME, --company-dir DIR and --nvim-config DIR." ;;
   esac
 done
-if [[ -n "$company" && "$company" != none ]]; then
-  [[ -f "$HOME/.zsh/companies/$company.zsh" || -f "$company_dir/$company.zsh" ]] \
+if [[ -n "$company" && "$company" != none && ! -f "$HOME/.zsh/companies/$company.zsh" ]]; then
+  [[ "$company_dir" != none && ( ! -e "$company_dir" || -f "$company_dir/$company.zsh" ) ]] \
     || die "Unknown company: $company (add $company.zsh to $company_dir or use --company none)"
 fi
 for script in install-core-tools typescript-dev rust-dev go-dev terraform-dev terminals-setup; do

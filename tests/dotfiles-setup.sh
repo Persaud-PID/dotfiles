@@ -4,7 +4,7 @@ set -euo pipefail
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 root="$(mktemp -d "${TMPDIR:-/tmp}/dotfiles-setup-test.XXXXXX")"
 trap 'rm -rf "$root"' EXIT
-export COMPANY_CONFIG_DIR=none
+export COMPANY_CONFIG_DIR=none COMPANY_CONFIG_REPO="$root/no-network-company-configs"
 home="$root/home with spaces"
 external="$root/configs/nvim with spaces"
 mkdir -p "$external"
@@ -142,10 +142,44 @@ printf 'edited through home\n' >> "$company_home/.zsh/companies/work.zsh"
 command grep -Fq 'edited through home' "$company_repo/work.zsh"
 HOME="$company_home" COMPANY_CONFIG_DIR="$company_repo" "$REPO_DIR/setup.sh" --skip-nvim > "$root/company-dir-repeat.log"
 [[ "$company_backup" == "$(find "$company_home" -maxdepth 1 -type d -name '.dotfiles_backup_*')" ]]
-if HOME="$company_home" "$REPO_DIR/setup.sh" --skip-nvim --company-dir "$root/missing-company-dir" > "$root/company-dir-missing.log" 2>&1; then
+if HOME="$company_home" "$REPO_DIR/setup.sh" --skip-nvim --company none --company-dir "$root/missing-company-dir" > "$root/company-dir-missing.log" 2>&1; then
   echo "FAIL: missing company directory was accepted" >&2
   exit 1
 fi
+
+company_source="$root/company-source"
+git init -q -b main "$company_source"
+printf 'cloned work config\n' > "$company_source/work.zsh"
+git -C "$company_source" add work.zsh
+git -C "$company_source" -c user.name=Fixture -c user.email=fixture@example.com -c commit.gpgsign=false commit -q -m fixture
+clone_layout="$root/clone layout"
+clone_home="$root/clone-home"
+mkdir -p "$clone_layout/dotfiles" "$clone_home"
+cp -p "$REPO_DIR/setup.sh" "$clone_layout/dotfiles/setup.sh"
+for package in zsh starship cmux ghostty git tmux bash alacritty-darwin alacritty-linux; do
+  mkdir -p "$clone_layout/dotfiles/$package"
+done
+clone_setup() { env -u COMPANY_CONFIG_DIR HOME="$clone_home" COMPANY_CONFIG_REPO="$company_source" "$clone_layout/dotfiles/setup.sh" --skip-nvim "$@"; }
+clone_setup --dry-run --company work > "$root/clone-preview.log"
+[[ ! -e "$clone_layout/company-configs" ]]
+command grep -Fq "Would clone $company_source" "$root/clone-preview.log"
+clone_setup --company none > "$root/clone-none.log"
+[[ ! -e "$clone_layout/company-configs" ]]
+clone_setup --company work > "$root/clone.log"
+[[ -d "$clone_layout/company-configs/.git" ]]
+[[ "$clone_home/.zsh/companies/work.zsh" -ef "$clone_layout/company-configs/work.zsh" ]]
+[[ "$clone_home/.zsh/company.zsh" -ef "$clone_layout/company-configs/work.zsh" ]]
+clone_setup --company work > "$root/clone-repeat.log"
+if clone_setup --company missing-company > "$root/clone-unknown.log" 2>&1; then
+  echo "FAIL: company missing from the cloned repository was accepted" >&2
+  exit 1
+fi
+if HOME="$clone_home" COMPANY_CONFIG_REPO="$root/missing-source" "$REPO_DIR/setup.sh" --skip-nvim \
+  --company-dir "$root/unreachable clone" --company work > "$root/clone-fail.log" 2>&1; then
+  echo "FAIL: failed company clone was accepted" >&2
+  exit 1
+fi
+[[ ! -e "$root/unreachable clone" && "$clone_home/.zsh/company.zsh" -ef "$clone_layout/company-configs/work.zsh" ]]
 if run_setup --nvim-config > "$root/nvim-invalid.log" 2>&1; then
   echo "FAIL: missing Neovim path argument was accepted" >&2
   exit 1
