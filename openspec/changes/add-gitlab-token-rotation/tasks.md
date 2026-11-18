@@ -33,3 +33,7 @@
 ## 7. Fix Zsh compatibility regression
 
 - [x] 7.1 Remove the unsupported Zsh option and avoid leaking preflight cleanup helpers into the interactive shell; verify clean success stderr, unchanged caller options, and no helper-function pollution on the installed Zsh version.
+
+## 8. Keep internal identifiers out of the repository
+
+- [x] 8.1 Move the helper to `zsh/.zsh.d/72-gitlab.zsh` and read the host and item ID from `GITLAB_ROTATION_HOST` and `GITLAB_ROTATION_OP_ITEM_ID`; verify missing or invalid configuration fails before item retrieval, locking, or POST, and that tests use only placeholder hosts and item IDs.

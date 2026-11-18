@@ -10,6 +10,7 @@ cp "$REPO_DIR/scripts/"{neovim-setup,install-all}.sh "$fixture/scripts/"
 cp "$REPO_DIR/scripts/lib/common.sh" "$fixture/scripts/lib/"
 cp "$REPO_DIR/brew/Brewfile.neovim" "$fixture/brew/"
 export TEST_CALLS="$temp/calls" HOME="$temp/home"
+unset COMPANY_CONFIG_DIR
 export PATH="$temp/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 printf 'return {}\n' > "$external/init.lua"
 printf '{"unchanged":true}\n' > "$external/lazy-lock.json"
@@ -59,4 +60,13 @@ if TEST_OLD_NVIM=1 bash "$fixture/scripts/neovim-setup.sh" > "$temp/old-version-
   exit 1
 fi
 [[ "$(command grep -c '^setup' "$TEST_CALLS")" == 2 ]]
+mkdir -p "$temp/company configs"
+printf 'company fixture\n' > "$temp/company configs/work.zsh"
+bash "$fixture/scripts/install-all.sh" --company work --company-dir "$temp/company configs" > "$temp/company-output"
+command grep -Fxq "setup <--company> <work> <--company-dir> <$temp/company configs>" "$TEST_CALLS"
+if bash "$fixture/scripts/install-all.sh" --company missing --company-dir "$temp/company configs" > "$temp/company-invalid" 2>&1; then
+  echo "FAIL: full installer accepted an unknown company" >&2
+  exit 1
+fi
+[[ "$(command grep -c '^setup' "$TEST_CALLS")" == 3 ]]
 echo "PASS: Neovim system-only provisioning, full-install argument forwarding and version guard use mocks only"

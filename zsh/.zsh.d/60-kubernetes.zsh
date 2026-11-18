@@ -47,7 +47,7 @@ k8sDebug() {
       mongosh) image="rtsp/mongosh"; podName="k8sdebug-mongosh" ;;
       curl)    image="curlimages/curl"; podName="k8sdebug-curl" ;;
       alpine)  image="alpine"; podName="k8sdebug-alpine" ;;
-      helloWorld) image="example.invalid/hello-world:latest"; podName="k8sdebug-helloworld" ;;
+      helloWorld) image="${K8S_DEBUG_HELLO_WORLD_IMAGE:-}"; podName="k8sdebug-helloworld"; [[ -n "$image" ]] || { echo "Set K8S_DEBUG_HELLO_WORLD_IMAGE"; return 1; } ;;
       *) echo "unknown debugType"; return 1 ;;
     esac
   fi

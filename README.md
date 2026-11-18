@@ -10,26 +10,30 @@ cmux and Starship use the TokyoNight Night palette.
 
 ```sh
 git clone --recurse-submodules https://github.com/Persaud-PID/dotfiles.git
+# Optional, private: clone your company-configs repository next to dotfiles.
 cd dotfiles
 brew install stow
-./setup.sh --dry-run --company zscaler
-./setup.sh --company zscaler
+./setup.sh --dry-run --company work
+./setup.sh --company work
 ```
 
 `setup.sh` only links configs, including tmux, Bash and platform-specific Alacritty.
 It never adopts local files into Git, installs
 software, runs agent hooks, or changes your login shell. Existing conflicts move
 to a private `~/.dotfiles_backup_<timestamp>.*` directory. Repeated runs are
-idempotent. Use `--company chewy`, `--company none`, or omit the option to retain
+idempotent. Use `--company NAME`, `--company none`, or omit the option to retain
 the currently selected company. Neovim links to the `nvim/.config/nvim` submodule
 when initialized; otherwise setup warns and leaves the existing config untouched.
 Use `--nvim-config DIR` or `NVIM_CONFIG_DIR` for another location, or
 `--skip-nvim` to leave Neovim untouched. `--target DIR` supports an isolated
 preview/test.
-Company definitions mirror `~/.zsh/companies/` through the `company/` Stow package.
-The selected definition is loaded through `~/.zsh/company.zsh`. Open a new shell
-after switching companies. Setup backs up owned links from the former
-`~/.config/laptop-setup/companies/` layout without moving private files.
+Company definitions live in a separate private repository, not here. Clone it
+next to this checkout as `company-configs` (or pass `--company-dir DIR` /
+`COMPANY_CONFIG_DIR`); setup links each of its `*.zsh` files into
+`~/.zsh/companies/`, so editing either path changes the same file. `--company NAME`
+links `~/.zsh/company.zsh` to `~/.zsh/companies/NAME.zsh`. Open a new shell after
+switching companies. Setup backs up links left by the former `company/` Stow
+package and `~/.config/laptop-setup/companies/` layout without moving private files.
 
 On a fresh Mac, choose the individual installers you need (Homebrew is installed
 if absent):
@@ -46,21 +50,21 @@ if absent):
 ./scripts/kubernetes-dev.sh       # macOS: AWS, Kubernetes, Helm, Krew and helpers
 ./scripts/containers-dev.sh       # macOS: Docker/Compose + Colima; does not start a VM
 ./scripts/terminals-setup.sh      # tmux/TPM, Alacritty, Hack Nerd Font
-./scripts/neovim-setup.sh --company zscaler # macOS: editor dependencies and external config link
+./scripts/neovim-setup.sh --company work # macOS: editor dependencies and external config link
 ./scripts/cmux-setup.sh           # macOS: cmux/Obsidian/Ollama, agent CLIs/hooks and cmux skills
 
 # Linux only; also called by terminals-setup.sh on Linux:
 # ./scripts/install-font-linux.sh # Hack and Noto Nerd Fonts
 
 # Alternative: run the full setup instead of the individual installers:
-# ./scripts/install-all.sh --company zscaler
+# ./scripts/install-all.sh --company work
 ```
 
 The standalone Python and Rye commands are alternatives if you do not run the
 Rust installer; running all three repeats those setup steps.
 
 For the complete former bootstrap toolset, run
-`./scripts/install-all.sh --company zscaler`. This explicitly provisions the Mac;
+`./scripts/install-all.sh --company work`. This explicitly provisions the Mac;
 do not run it just to update symlinks. Installers use declarative `brew/Brewfile*`
 manifests without bulk upgrades, and never remove stale Helm plugins or start
 Docker/Colima. Homebrew tap trust is not changed automatically; if Homebrew refuses
@@ -111,12 +115,11 @@ Run `cmux reload-config` **inside cmux** for terminal/config changes if necessar
 ```text
 setup.sh                         # GNU Stow, backups, company choice, nvim link
 zsh/.zshrc                       # sources ~/.zsh.d/*.zsh in numeric order
-zsh/.zsh.d/                      # paths, core, runtimes, completions, cloud helpers
+zsh/.zsh.d/                      # paths, core, runtimes, completions, cloud and GitLab helpers
 starship/.config/starship.toml   # TokyoNight Night prompt; Git stays in cmux sidebar
 cmux/.config/cmux/cmux.json      # native app/sidebar preferences
 ghostty/.config/ghostty/config   # terminal theme and Nerd Font
 git/.config/git/                 # Git defaults included from private ~/.gitconfig
-company/.zsh/companies/          # company shell definitions; select with --company
 tmux/.tmux.conf                  # Tokyo Night, Ctrl-F prefix, TPM plugins
 bash/.bashrc                     # reference Bash fallback
 alacritty-{darwin,linux}/         # current TOML, all palettes, original YAML
@@ -180,7 +183,7 @@ NVIM_CONFIG_DIR="$HOME/src/nvim-config" ./setup.sh
 # Install Neovim/system dependencies and link the same external checkout:
 ./scripts/neovim-setup.sh --nvim-config "$HOME/src/nvim-config"
 # The full macOS installer also accepts the override:
-./scripts/install-all.sh --company zscaler --nvim-config "$HOME/src/nvim-config"
+./scripts/install-all.sh --company work --nvim-config "$HOME/src/nvim-config"
 ```
 
 A missing/uninitialized checkout or directory without `init.lua`/`init.vim`
@@ -239,9 +242,15 @@ Provision only the pieces you want:
 | `neovim-setup.sh` | Neovim/system dependencies and external config linking; no plugin or lockfile provisioning |
 
 AWS profile helpers (`useprof`, `saveprof`, `unsetAWS`), Kubernetes/Helm helpers,
-Git/PR commands, and company helpers are retained. `saveprof` now persists only
+Git/PR commands, and private company helpers are retained. `saveprof` now persists only
 to private `~/.zsh/aws-profile.zsh`, not a source-controlled shell file.
 Git defaults are included without replacing user identity/credentials.
+
+`rotateGitlabToken` and `rotateGitlabSshKey` (`zsh/.zsh.d/72-gitlab.zsh`) read
+`GITLAB_ROTATION_HOST`, `GITLAB_ROTATION_OP_ITEM_ID` and optional
+`GITLAB_ROTATION_KEY_TITLE` from your private environment (for example
+`~/.envrc`) and stop before contacting any service when they are unset.
+`k8sDebug helloWorld` runs the image in `K8S_DEBUG_HELLO_WORLD_IMAGE`.
 
 ## Toolchain And Terminal Changes
 

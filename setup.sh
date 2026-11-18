@@ -7,8 +7,9 @@ DRY_RUN=0
 SKIP_NVIM=0
 NVIM_CONFIG_DIR="${NVIM_CONFIG_DIR:-$REPO_DIR/nvim/.config/nvim}"
 COMPANY="${COMPANY_NAME:-}"
+COMPANY_DIR="${COMPANY_CONFIG_DIR:-}"
 BACKUP_DIR=""
-PACKAGES=(zsh starship cmux ghostty git company tmux bash)
+PACKAGES=(zsh starship cmux ghostty git tmux bash)
 case "$(uname -s)" in
   Darwin) PACKAGES+=(alacritty-darwin) ;;
   Linux) PACKAGES+=(alacritty-linux) ;;
@@ -18,22 +19,26 @@ esac
 usage() {
   cat <<'EOF'
 Usage: ./setup.sh [--dry-run] [--target DIR] [--company NAME|none]
-                  [--nvim-config DIR] [--skip-nvim]
+                  [--company-dir DIR|none] [--nvim-config DIR] [--skip-nvim]
 Uses GNU Stow without --adopt; conflicting files are moved to a private backup.
 No packages, plugins, login-shell changes, or cmux hooks are installed here.
 Neovim config: --nvim-config overrides NVIM_CONFIG_DIR (default: nvim/.config/nvim).
 Missing configs are skipped without changing the existing Neovim configuration.
+Company configs: --company-dir (or COMPANY_CONFIG_DIR) links each DIR/*.zsh into
+~/.zsh/companies/; default: a sibling company-configs checkout, when present.
+--company NAME then selects ~/.zsh/companies/NAME.zsh.
 EOF
 }
 while (( $# )); do
   case "$1" in
     --dry-run) DRY_RUN=1 ;;
     --skip-nvim) SKIP_NVIM=1 ;;
-    --target|--company|--nvim-config)
+    --target|--company|--company-dir|--nvim-config)
       [[ $# -ge 2 && -n "$2" ]] || { usage >&2; exit 2; }
       case "$1" in
         --target) TARGET="$2" ;;
         --company) COMPANY="$2" ;;
+        --company-dir) COMPANY_DIR="$2" ;;
         --nvim-config) NVIM_CONFIG_DIR="$2" ;;
       esac
       shift ;;
@@ -45,13 +50,21 @@ done
 command -v stow >/dev/null || { echo "Install GNU Stow first: brew install stow" >&2; exit 1; }
 [[ -d "$TARGET" ]] || { echo "Target directory must already exist: $TARGET" >&2; exit 1; }
 TARGET="$(cd "$TARGET" && pwd -P)"
+if [[ -z "$COMPANY_DIR" ]]; then
+  COMPANY_DIR="$(dirname "$REPO_DIR")/company-configs"
+  [[ -d "$COMPANY_DIR" ]] || COMPANY_DIR=none
+fi
+if [[ "$COMPANY_DIR" != none ]]; then
+  [[ -d "$COMPANY_DIR" ]] || { echo "Company config directory not found: $COMPANY_DIR" >&2; exit 2; }
+  COMPANY_DIR="$(cd "$COMPANY_DIR" && pwd -P)"
+fi
 if [[ -z "$COMPANY" && -L "$TARGET/.zsh/company.zsh" ]]; then
   COMPANY="$(basename "$(readlink "$TARGET/.zsh/company.zsh")" .zsh)"
 fi
 if [[ -n "$COMPANY" && "$COMPANY" != none ]]; then
   case "$COMPANY" in *[!a-zA-Z0-9_-]*) echo "Invalid company name" >&2; exit 2 ;; esac
-  [[ -f "$REPO_DIR/company/.zsh/companies/$COMPANY.zsh" ]] || {
-    echo "Unknown company: $COMPANY" >&2; exit 2;
+  [[ -f "$TARGET/.zsh/companies/$COMPANY.zsh" || -f "$COMPANY_DIR/$COMPANY.zsh" ]] || {
+    echo "Unknown company: $COMPANY (add $COMPANY.zsh to the company config directory or use --company none)" >&2; exit 2;
   }
 fi
 
@@ -121,6 +134,19 @@ if [[ ! -L "$TARGET/.config/laptop-setup" && ! -L "$old_companies" ]]; then
     fi
   done
 fi
+private_companies="$TARGET/.zsh/companies"
+if [[ ! -L "$private_companies" ]]; then
+  for old in "$private_companies/"*.zsh; do
+    [[ -L "$old" ]] || continue
+    link="$(readlink "$old")"
+    suffix="/company/.zsh/companies/$(basename "$old")"
+    if [[ "$link" == *"$suffix" ]]; then
+      owner="${link%"$suffix"}"
+      [[ "$owner" == /* ]] || owner="$private_companies/$owner"
+      if [[ "$owner" -ef "$REPO_DIR" ]]; then backup "$old"; fi
+    fi
+  done
+fi
 if (( ! SKIP_NVIM )); then
   if [[ -f "$NVIM_CONFIG_DIR/init.lua" || -f "$NVIM_CONFIG_DIR/init.vim" ]]; then
     NVIM_CONFIG_DIR="$(cd "$NVIM_CONFIG_DIR" && pwd -P)"
@@ -149,10 +175,16 @@ fi
 if (( ! SKIP_NVIM )); then
   link_config "$NVIM_CONFIG_DIR" "$TARGET/.config/nvim"
 fi
+if [[ "$COMPANY_DIR" != none && ! -L "$TARGET/.zsh/companies" ]]; then
+  for source in "$COMPANY_DIR/"*.zsh; do
+    [[ -f "$source" ]] || continue
+    link_config "$source" "$TARGET/.zsh/companies/$(basename "$source")"
+  done
+fi
 if [[ "$COMPANY" == none ]]; then
   backup "$TARGET/.zsh/company.zsh"
 elif [[ -n "$COMPANY" ]]; then
-  link_config "$REPO_DIR/company/.zsh/companies/$COMPANY.zsh" "$TARGET/.zsh/company.zsh"
+  link_config "$TARGET/.zsh/companies/$COMPANY.zsh" "$TARGET/.zsh/company.zsh"
 fi
 
 # Include only our defaults; user identity, credentials, and corporate includes

@@ -22,7 +22,8 @@ local item_file="$state/item.json"
 local response_file="$state/response.json"
 local old_token_file="$state/current-token"
 local new_token_file="$state/new-token"
-local workspace="$test_tmp/zscaler-gitlab-token-rotation-${UID}-syntheticitemfixture0001"
+local item_id='syntheticitemfixture0001'
+local workspace="$test_tmp/gitlab-token-rotation-${UID}-${item_id}"
 local secret_old="synthetic-old-token-${$}"
 local secret_new="synthetic-new-token-${$}"
 local passes=0
@@ -31,7 +32,8 @@ local rotate_status=0
 trap 'command rm -r "$test_root" 2>/dev/null' EXIT
 export TEST_STATE="$state" TEST_ITEM_FILE="$item_file" TEST_RESPONSE_FILE="$response_file"
 export TEST_OLD_TOKEN_FILE="$old_token_file" TEST_NEW_TOKEN_FILE="$new_token_file"
-export TEST_EXPECTED_ITEM_ID="syntheticitemfixture0001" TEST_SAFE_MODE=1 TMPDIR="$test_tmp"
+export TEST_EXPECTED_ITEM_ID="$item_id" TEST_SAFE_MODE=1 TMPDIR="$test_tmp"
+export GITLAB_ROTATION_HOST=gitlab.example.com GITLAB_ROTATION_OP_ITEM_ID="$item_id"
 PATH="$mock_bin:$original_path"
 export PATH
 
@@ -136,7 +138,7 @@ make_fixture() {
   print -rn -- "$secret_old" > "$old_token_file"
   print -rn -- "$secret_new" > "$new_token_file"
   cat > "$item_file" <<EOF
-{"id":"syntheticitemfixture0001","title":"Synthetic GitLab credential","category":"API_CREDENTIAL","tags":["synthetic"],"urls":[{"label":"website","url":"https://gitlab.example.com"}],"fields":[{"id":"credential","type":"CONCEALED","label":"credential","value":"$secret_old"},{"id":"username","type":"STRING","label":"username","value":"synthetic-user"},{"id":"extra","type":"STRING","label":"extra","value":"preserve me"}]}
+{"id":"$item_id","title":"Synthetic GitLab credential","category":"API_CREDENTIAL","tags":["synthetic"],"urls":[{"label":"website","url":"https://gitlab.example.com"}],"fields":[{"id":"credential","type":"CONCEALED","label":"credential","value":"$secret_old"},{"id":"username","type":"STRING","label":"username","value":"synthetic-user"},{"id":"extra","type":"STRING","label":"extra","value":"preserve me"}]}
 EOF
   cat > "$response_file" <<EOF
 {"token":"$secret_new","expires_at":"2027-01-06"}
@@ -163,7 +165,7 @@ fi
 make_fixture
 export TEST_CURL_CA_FILE="$test_root/mock-ca.pem"
 print -r -- "synthetic CA" > "$TEST_CURL_CA_FILE"
-source "$repo_root/company/.zsh/companies/zscaler.zsh" > /dev/null 2> "$state/source.stderr"
+source "$repo_root/zsh/.zsh.d/72-gitlab.zsh" > /dev/null 2> "$state/source.stderr"
 export SSL_CERT_FILE="$TEST_CURL_CA_FILE"
 assert_eq "${+functions[cleanup_preflight]}" 0 "sourcing configuration defined an internal cleanup function"
 assert_true "$( [[ ! -e "$state/get-count" && ! -e "$state/curl-count" ]] && print 1 || print 0 )" "sourcing configuration called a service"
@@ -263,6 +265,22 @@ export TEST_DATE_FAIL=1
 run_helper
 assert_eq "$rotate_status" 1 "expiry calculation failure should return nonzero"
 assert_true "$( [[ ! -e "$state/get-count" && ! -e "$state/curl-count" && ! -e "$workspace" ]] && print 1 || print 0 )" "expiry failure proceeded or left a lock"
+
+make_fixture
+unset GITLAB_ROTATION_HOST
+run_helper
+assert_eq "$rotate_status" 1 "missing GitLab host should fail"
+assert_file_has "$state/stderr" GITLAB_ROTATION_HOST "missing host did not name the setting"
+assert_true "$( [[ ! -e "$state/get-count" && ! -e "$state/curl-count" && ! -e "$workspace" ]] && print 1 || print 0 )" "missing host caused service access or a lock"
+export GITLAB_ROTATION_HOST=gitlab.example.com
+
+make_fixture
+export GITLAB_ROTATION_OP_ITEM_ID='../escape'
+run_helper
+assert_eq "$rotate_status" 1 "invalid item ID should fail"
+assert_file_has "$state/stderr" GITLAB_ROTATION_OP_ITEM_ID "invalid item ID did not name the setting"
+assert_true "$( [[ ! -e "$state/get-count" && ! -e "$state/curl-count" ]] && print 1 || print 0 )" "invalid item ID caused service access"
+export GITLAB_ROTATION_OP_ITEM_ID="$item_id"
 
 if (( failures == 0 )); then
   print -- "${passes} assertions passed; no live services were used"

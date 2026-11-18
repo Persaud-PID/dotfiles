@@ -44,7 +44,8 @@ on every machine.
 | AWS profile and cloud helper functions | `zsh/.zsh.d/50-aws.zsh` |
 | Kubernetes/Helm functions | `zsh/.zsh.d/60-kubernetes.zsh` |
 | Git branch/PR workflows | `zsh/.zsh.d/70-git.zsh` |
-| Chewy/Zscaler, GitLab token and SSH rotation | `company/.zsh/companies/`, mirroring the reference's shell-focused home layout; tests preserved |
+| Company shell definitions | separate private `company-configs` repository, linked into `~/.zsh/companies/` by `setup.sh`; selected with `--company` |
+| GitLab token and SSH rotation | `zsh/.zsh.d/72-gitlab.zsh`, configured from the private environment; tests preserved |
 | Custom completions and direnv/zoxide/plugins | numbered Zsh modules; generated completions stay private under `~/.zsh/completions` |
 | Node/npm/npx, Go, uv/pipx, Terraform | focused scripts and `brew/Brewfile.*` manifests; goenv/tfenv replace Homebrew Go/tenv |
 | AWS/Kubernetes/Helm/Krew/SSO | `scripts/kubernetes-dev.sh`, `python-dev.sh`, cloud Brewfile |

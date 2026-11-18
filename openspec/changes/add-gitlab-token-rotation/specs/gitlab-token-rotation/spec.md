@@ -1,15 +1,15 @@
 ## Purpose
 
-Allow the user to explicitly rotate the configured Zscaler GitLab personal access token and update its 1Password credential without exposing the token or losing a replacement that GitLab has already issued.
+Allow the user to explicitly rotate the configured GitLab personal access token and update its 1Password credential without exposing the token or losing a replacement that GitLab has already issued.
 
 ## ADDED Requirements
 
 ### Requirement: Rotation is explicitly invoked
 
-The Zscaler shell configuration SHALL expose a no-argument `rotateGitlabToken` command. Loading the configuration SHALL NOT contact GitLab or 1Password for rotation. Unexpected arguments or unavailable required commands SHALL return nonzero without rotating a token.
+The shared Zsh configuration SHALL expose a no-argument `rotateGitlabToken` command. Loading the configuration SHALL NOT contact GitLab or 1Password for rotation. Unexpected arguments or unavailable required commands SHALL return nonzero without rotating a token.
 
 #### Scenario: Loading shell configuration
-- **WHEN** the user sources the Zscaler shell configuration
+- **WHEN** the user sources the shell configuration
 - **THEN** the command is available and no rotation request is made
 
 #### Scenario: Invalid invocation or missing dependency
@@ -18,11 +18,15 @@ The Zscaler shell configuration SHALL expose a no-argument `rotateGitlabToken` c
 
 ### Requirement: Rotate only the configured credential
 
-The helper SHALL read item `syntheticitemfixture0001` from the `Employee` vault, require the `API_CREDENTIAL` category, and use exactly one nonempty field labeled `credential`. It SHALL make at most one POST to `https://gitlab.example.com/api/v4/personal_access_tokens/self/rotate`, authenticated with that current token, requesting a UTC `expires_at` date 90 days after invocation in `YYYY-MM-DD` format.
+The helper SHALL read the item whose ID is given by `GITLAB_ROTATION_OP_ITEM_ID` from the `Employee` vault, require the `API_CREDENTIAL` category, and use exactly one nonempty field labeled `credential`. It SHALL make at most one POST to `https://<GITLAB_ROTATION_HOST>/api/v4/personal_access_tokens/self/rotate`, authenticated with that current token, requesting a UTC `expires_at` date 90 days after invocation in `YYYY-MM-DD` format. If either setting is missing or invalid, the helper SHALL return nonzero before reading the item, creating a lock, or sending a POST.
 
 #### Scenario: Valid configured item
 - **WHEN** the specified item and unique credential field are valid
-- **THEN** one POST is sent to the corporate self-rotation endpoint with the agreed expiry
+- **THEN** one POST is sent to the configured self-rotation endpoint with the agreed expiry
+
+#### Scenario: Missing or invalid configuration
+- **WHEN** `GITLAB_ROTATION_HOST` or `GITLAB_ROTATION_OP_ITEM_ID` is unset or invalid
+- **THEN** the helper returns nonzero, names the missing setting, and makes no 1Password read, lock, or POST
 
 #### Scenario: Invalid or unsupported item
 - **WHEN** the item cannot be read, is not an API Credential, or has a missing, duplicate, empty, or invalid credential field

@@ -20,7 +20,8 @@ local ssh_dir="$test_home/.ssh"
 local workspace="$ssh_dir/.gitlab-key-rotation"
 local keys_file="$test_root/gitlab-keys.json"
 local state="$test_root/state"
-local old_public='ssh-ed25519 AAAAoldfixturekey fixture@example.com (gitlab)'
+local key_title='fixture@example.com (gitlab)'
+local old_public="ssh-ed25519 AAAAoldfixturekey $key_title"
 local server_old_public='ssh-ed25519 AAAAoldfixturekey GitLab-normalized-comment'
 local new_public='ssh-ed25519 AAAAnewfixturekeygitlab-rotation'
 local passes=0
@@ -29,6 +30,7 @@ local rotate_status=0
 command mkdir -m 700 "$mock_bin" "$test_home" "$ssh_dir" "$state" || exit 1
 trap 'command rm -r "$test_root" 2>/dev/null' EXIT
 export HOME="$test_home" TEST_SAFE_MODE=1 TEST_HOST=gitlab.example.com TEST_EXPECTED_EXPIRY=2027-01-06
+export GITLAB_ROTATION_HOST="$TEST_HOST" GITLAB_ROTATION_KEY_TITLE="$key_title"
 export TEST_SSH_DIR="$ssh_dir" TEST_KEYS_FILE="$keys_file" TEST_STATE="$state"
 export TEST_OLD_PUBLIC="$old_public" TEST_NEW_PUBLIC="$new_public"
 PATH="$mock_bin:$original_path"
@@ -199,7 +201,7 @@ make_fixture() {
   print -r -- "$old_public" > "$ssh_dir/id_ed25519_gitlab.pub"
   command chmod 600 "$ssh_dir/id_ed25519_gitlab"
   command chmod 644 "$ssh_dir/id_ed25519_gitlab.pub"
-  jq -cn --arg title 'fixture@example.com (gitlab)' --arg key "$server_old_public" '[{id:101,title:$title,key:$key,usage_type:"auth_and_signing",expires_at:"2026-10-19"}]' > "$keys_file"
+  jq -cn --arg title "$key_title" --arg key "$server_old_public" '[{id:101,title:$title,key:$key,usage_type:"auth_and_signing",expires_at:"2026-10-19"}]' > "$keys_file"
   command chmod 600 "$keys_file"
   unset TEST_SSH_FAIL TEST_FAIL_DELETE_ID TEST_MISMATCH_PRIVATE TEST_FAIL_POST_BEFORE_CREATE TEST_FAIL_POST_AFTER_CREATE TEST_DATE_FAIL
   export TEST_SAFE_MODE=1
@@ -211,7 +213,7 @@ run_rotation() {
   rotate_status=$code
 }
 
-source "$repo_root/company/.zsh/companies/zscaler.zsh" > /dev/null 2> "$state/source.stderr"
+source "$repo_root/zsh/.zsh.d/72-gitlab.zsh" > /dev/null 2> "$state/source.stderr"
 make_fixture
 assert_true "$(jq --rawfile local_key "$ssh_dir/id_ed25519_gitlab.pub" -er '.[0].key as $server_key | ($server_key | split(" ")[0:2]) == ($local_key | rtrimstr("\n") | split(" ")[0:2]) and $server_key != ($local_key | rtrimstr("\n"))' "$keys_file")" 'fixture should model GitLab normalizing the public-key comment'
 run_rotation
@@ -219,7 +221,7 @@ assert_eq "$rotate_status" 0 'mocked SSH key rotation should succeed'
 assert_eq "$(<"$state/add-count")" 1 'exactly one replacement key should be registered'
 assert_eq "$(<"$state/delete-101")" 1 'the identified old GitLab key should be deleted after testing the replacement'
 assert_eq "$(<"$state/ssh-count")" 1 'the staged replacement should be tested once'
-assert_true "$(jq --rawfile expected "$ssh_dir/id_ed25519_gitlab.pub" --arg expiry "$TEST_EXPECTED_EXPIRY" -er '. | any(.[]; .id == 202 and .key == ($expected | rtrimstr("\n")) and .title == "fixture@example.com (gitlab)" and .usage_type == "auth_and_signing" and .expires_at == $expiry)' "$keys_file")" 'replacement GitLab key metadata is wrong'
+assert_true "$(jq --rawfile expected "$ssh_dir/id_ed25519_gitlab.pub" --arg expiry "$TEST_EXPECTED_EXPIRY" --arg title "$key_title" -er '. | any(.[]; .id == 202 and .key == ($expected | rtrimstr("\n")) and .title == $title and .usage_type == "auth_and_signing" and .expires_at == $expiry)' "$keys_file")" 'replacement GitLab key metadata is wrong'
 assert_file_has "$ssh_dir/id_ed25519_gitlab" 'synthetic-new-private-key' 'new private key was not installed'
 assert_true "$( [[ ! -e "$workspace" ]] && print 1 || print 0 )" 'successful rotation left backups or a lock'
 assert_file_lacks "$state/stdout" 'synthetic-new-private-key' 'private key appeared on stdout'
@@ -238,6 +240,14 @@ export TEST_DATE_FAIL=1
 run_rotation
 assert_eq "$rotate_status" 1 'expiry calculation failure should stop the rotation'
 assert_true "$( [[ ! -e "$state/list-count" && ! -e "$state/add-count" && ! -e "$workspace" ]] && print 1 || print 0 )" 'expiry failure made an API request or created a lock'
+
+make_fixture
+unset GITLAB_ROTATION_HOST
+run_rotation
+assert_eq "$rotate_status" 1 'missing GitLab host should fail before any request'
+assert_file_has "$state/stderr" GITLAB_ROTATION_HOST 'missing host did not name the setting'
+assert_true "$( [[ ! -e "$state/list-count" && ! -e "$workspace" ]] && print 1 || print 0 )" 'missing host caused a GitLab request or lock'
+export GITLAB_ROTATION_HOST="$TEST_HOST"
 
 make_fixture
 export TEST_FAIL_POST_BEFORE_CREATE=1

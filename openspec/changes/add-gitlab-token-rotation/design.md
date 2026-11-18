@@ -1,6 +1,6 @@
 ## Context
 
-See `proposal.md` for motivation and `specs/gitlab-token-rotation/spec.md` for the behavior contract. `company/zscaler.zsh` is loaded as the user's Zscaler-specific shell configuration. It already sets `SSL_CERT_FILE` and points its GitLab clone helper at `gitlab.example.com`. `curl`, `jq`, and 1Password CLI (`op`) are installed; `jq` is a bootstrap dependency.
+See `proposal.md` for motivation and `specs/gitlab-token-rotation/spec.md` for the behavior contract. `zsh/.zsh.d/72-gitlab.zsh` is loaded by the Stow-managed `.zshrc`. The GitLab host and 1Password item ID come from the private `GITLAB_ROTATION_HOST` and `GITLAB_ROTATION_OP_ITEM_ID` environment variables (for example in `~/.envrc`); the private company configuration may set `SSL_CERT_FILE`. `curl`, `jq`, and 1Password CLI (`op`) are installed; `jq` is a bootstrap dependency.
 
 The local OpenSpec change and configuration are uncommitted. Preserve unrelated user edits. Do not read the live vault item, display secrets, or perform a live rotation during implementation or tests.
 
@@ -20,11 +20,11 @@ GitLab self-rotation revokes the old token and returns the new token once. Repla
 
 ## Decisions
 
-### Keep the existing shell workflow and confirmed values
+### Keep the shell workflow; configure host and item privately
 
-Add the no-argument `rotateGitlabToken` function to `company/zscaler.zsh`, retaining the user's existing changes. Use the confirmed corporate host, the specified item UUID and `Employee` vault, the unique `credential` field, and the agreed 90-day UTC expiry. Run the function body in a subshell so its `umask`, shell options, and local state do not change the interactive shell. Reject arguments and missing commands before accessing the item. Sourcing the file performs no rotation.
+Add the no-argument `rotateGitlabToken` function to `zsh/.zsh.d/72-gitlab.zsh`. Read the host from `GITLAB_ROTATION_HOST` and the item ID from `GITLAB_ROTATION_OP_ITEM_ID` at invocation, and reject a missing value, a host that is not a bare hostname, or a non-alphanumeric item ID before any other work. Use the `Employee` vault, the unique `credential` field, and the agreed 90-day UTC expiry. Run the function body in a subshell so its `umask`, shell options, and local state do not change the interactive shell. Reject arguments and missing commands before accessing the item. Sourcing the file performs no rotation.
 
-The example's preliminary token-status GET and DuckDB parser are unnecessary for self-rotation: the POST uses the current token itself and `jq` is already available. The fixed host and path avoid a general configuration interface.
+The example's preliminary token-status GET and DuckDB parser are unnecessary for self-rotation: the POST uses the current token itself and `jq` is already available. Only the host and item ID are configurable; the path, vault, field, and lifetime stay fixed. This avoids a general configuration interface while keeping internal identifiers out of the repository.
 
 ### Carry secrets only through stdin and a private response file
 
@@ -53,7 +53,7 @@ The filesystem state itself persists if the function is interrupted; do not add 
 
 ## Migration Plan
 
-Reload the Zscaler company configuration or start a new shell to define the helper; sourcing it does not rotate a token. The first live invocation is left to the user. Removing the function later cannot undo a completed GitLab rotation. Resolve any retained recovery workspace before invoking the helper again.
+Set `GITLAB_ROTATION_HOST` and `GITLAB_ROTATION_OP_ITEM_ID` privately, then start a new shell to define the helper; sourcing it does not rotate a token. The first live invocation is left to the user. Removing the function later cannot undo a completed GitLab rotation. Resolve any retained recovery workspace before invoking the helper again.
 
 ## References
 
