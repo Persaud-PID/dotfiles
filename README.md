@@ -64,7 +64,7 @@ Each script covers one area. Homebrew gets installed first if it's missing.
 | `kubernetes-dev.sh` | macOS: AWS CLI, kubectl, kustomize, k9s, kubeconform, Helm 3 with diff/secrets, Krew, fubectl |
 | `containers-dev.sh` | macOS: Docker CLI/Compose and Colima (no VM is started) |
 | `agents-setup.sh` | macOS: Pi, Devin CLI and Gemini CLI; run after `typescript-dev.sh` |
-| `cmux-setup.sh` | macOS: cmux, Clocker, Obsidian, Ollama, Meslo font, agent CLIs, Pi/Gemini hooks, cmux skills |
+| `cmux-setup.sh` | macOS: cmux, Orca, Clocker, Obsidian, Ollama, Meslo font, agent CLIs, Pi/Gemini hooks, cmux skills |
 | `neovim-setup.sh` | macOS: Neovim and its system dependencies, then links the config |
 | `install-font-linux.sh` | Linux: Hack and Noto Nerd Fonts (also run by `terminals-setup.sh`) |
 
@@ -77,7 +77,10 @@ Notes:
   upgrades. Stale Helm plugins are never removed and Docker/Colima are never
   started.
 - Homebrew tap trust isn't changed automatically. If Homebrew refuses the cmux
-  tap, review it and follow Homebrew's scoped trust instructions.
+  or Orca tap (`stablyai/orca`), review it and follow Homebrew's scoped trust
+  instructions.
+- Orca installs from its own tap as `stablyai/orca/orca`. The app updates itself
+  after install. Nothing launches it.
 - `cmux-setup.sh` also runs `agents-setup.sh`. Pi comes from
   `@earendil-works/pi-coding-agent` (installed with `--ignore-scripts`), Gemini
   from `@google/gemini-cli`, and Devin from the `devin-cli` cask when it's

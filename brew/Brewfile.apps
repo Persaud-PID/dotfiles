@@ -1,5 +1,7 @@
 tap "manaflow-ai/cmux"
+tap "stablyai/orca"
 cask "cmux"
+cask "stablyai/orca/orca"
 cask "clocker"
 cask "obsidian"
 cask "ollama-app"

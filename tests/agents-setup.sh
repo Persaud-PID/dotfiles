@@ -85,6 +85,8 @@ first_hook="$(command grep -n '^cmux hooks ' "$TEST_CALLS" | head -n 1 | cut -d:
 [[ "$first_install" -lt "$first_hook" ]]
 command grep -Fxq 'cask "obsidian"' "$temp/repo/brew/Brewfile.apps"
 command grep -Fxq 'cask "ollama-app"' "$temp/repo/brew/Brewfile.apps"
+command grep -Fxq 'tap "stablyai/orca"' "$temp/repo/brew/Brewfile.apps"
+command grep -Fxq 'cask "stablyai/orca/orca"' "$temp/repo/brew/Brewfile.apps"
 
 rm "$TEST_NODE_BIN/pi"
 if TEST_FAIL_NPM=1 bash "$temp/repo/scripts/cmux-setup.sh" > "$temp/failure-output" 2>&1; then
