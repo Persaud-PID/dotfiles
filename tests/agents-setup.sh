@@ -98,8 +98,12 @@ first_hook="$(command grep -n '^cmux hooks ' "$TEST_CALLS" | head -n 1 | cut -d:
 command grep -Fxq 'cask "obsidian"' "$temp/repo/brew/Brewfile.apps"
 command grep -Fxq 'cask "ollama-app"' "$temp/repo/brew/Brewfile.apps"
 skills_call='npx --yes skills add manaflow-ai/cmux -g -y --agent claude-code codex devin gemini-cli pi windsurf'
-[[ "$(command grep -c '^npx --yes skills add' "$TEST_CALLS")" == 2 ]]
+[[ "$(command grep -c '^npx --yes skills add' "$TEST_CALLS")" == 8 ]]
 [[ "$(command grep -Fxc "$skills_call" "$TEST_CALLS")" == 2 ]]
+for skill in orca-cli orchestration orca-computer-use; do
+  orca_call="npx --yes skills add https://github.com/stablyai/orca --skill $skill -g -y --agent claude-code codex devin gemini-cli pi windsurf"
+  [[ "$(command grep -Fxc "$orca_call" "$TEST_CALLS")" == 2 ]]
+done
 command grep -Fxq 'tap "stablyai/orca"' "$temp/repo/brew/Brewfile.apps"
 command grep -Fxq 'cask "stablyai/orca/orca"' "$temp/repo/brew/Brewfile.apps"
 

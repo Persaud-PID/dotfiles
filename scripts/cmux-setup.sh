@@ -23,4 +23,8 @@ skill_agents=()
 while IFS= read -r agent; do skill_agents+=("$agent"); done < <(skills_agents)
 log "Installing cmux skills for: ${skill_agents[*]}"
 npx --yes skills add manaflow-ai/cmux -g -y --agent "${skill_agents[@]}" || warn "cmux skills installation failed."
+log "Installing Orca skills for: ${skill_agents[*]}"
+for skill in orca-cli orchestration orca-computer-use; do
+  npx --yes skills add https://github.com/stablyai/orca --skill "$skill" -g -y --agent "${skill_agents[@]}" || warn "Orca skill $skill installation failed."
+done
 "$cmux" reload-config || warn "Run cmux reload-config inside cmux to apply terminal preferences."
