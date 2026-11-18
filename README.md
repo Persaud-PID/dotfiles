@@ -87,6 +87,11 @@ Notes:
   missing. Agents that are already installed stay, including the Devin bundled
   with the desktop app. cmux shims don't count as installed agents. Logins are
   manual.
+- cmux skills install only for agents that are actually present: Claude Code,
+  Codex, Devin, Gemini CLI, Pi, Amp, GitHub Copilot, Grok, Hermes, Kiro CLI,
+  MiniMax Code, Cursor and Windsurf (Devin Desktop counts). Leftover config
+  folders and cmux's own wrappers don't count, which the skills CLI alone would
+  treat as installed.
 - cmux hooks get set up for Pi and Gemini only. Claude works through cmux's
   wrapper integration, and Devin and Ollama have no hook target. Other hooks
   aren't touched.

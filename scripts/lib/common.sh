@@ -88,6 +88,35 @@ install_nerd_font() {
   warn "Font installation failed: $cask. Original fonts restored where possible."
   return 1
 }
+agent_installed() {
+  local binary
+  while IFS= read -r binary; do
+    # cmux can expose wrappers even when the underlying agent is absent.
+    case "$binary" in */cmux-cli-shims/*|*/cmux*.app/Contents/Resources/bin/*) continue ;; esac
+    return 0
+  done < <(type -a -p "$1")
+  return 1
+}
+windsurf_installed() {
+  local apps="${APPLICATIONS_DIR:-/Applications}" app
+  agent_installed windsurf && return 0
+  # Devin Desktop is the rebranded Windsurf and keeps its bundle ID.
+  for app in Windsurf Devin; do
+    command grep -Fqs com.exafunction.windsurf "$apps/$app.app/Contents/Info.plist" && return 0
+  done
+  return 1
+}
+# Print the skills CLI ids of the agents that are actually installed.
+skills_agents() {
+  local apps="${APPLICATIONS_DIR:-/Applications}" pair
+  for pair in claude:claude-code codex:codex devin:devin gemini:gemini-cli pi:pi amp:amp \
+    copilot:github-copilot grok:grok hermes:hermes-agent kiro-cli:kiro-cli mcode:minimax-code; do
+    if agent_installed "${pair%%:*}"; then echo "${pair#*:}"; fi
+  done
+  if agent_installed cursor-agent || [[ -d "$apps/Cursor.app" ]]; then echo cursor; fi
+  if windsurf_installed; then echo windsurf; fi
+  return 0
+}
 load_nvm() {
   export NVM_DIR="${NVM_DIR:-${XDG_DATA_HOME:-$HOME/.local/share}/nvm}"
   [[ -d "$HOME/.nvm" ]] && export NVM_DIR="$HOME/.nvm"

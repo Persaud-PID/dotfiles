@@ -65,6 +65,18 @@ case "$*" in
   *) exit 91 ;;
 esac
 EOF
+# Skills go only to agents that are really installed: claude and codex binaries,
+# Windsurf (as Devin.app), but not the cmux grok wrapper or absent agents.
+for agent in claude codex; do
+  printf '#!/bin/sh\nexit 0\n' > "$temp/bin/$agent"
+done
+mkdir -p "$temp/cmux.app/Contents/Resources/bin" "$temp/Applications/Devin.app/Contents"
+printf '#!/bin/sh\nexit 92\n' > "$temp/cmux.app/Contents/Resources/bin/grok"
+chmod +x "$temp/cmux.app/Contents/Resources/bin/grok"
+printf '<key>CFBundleIdentifier</key><string>com.exafunction.windsurf</string>\n' \
+  > "$temp/Applications/Devin.app/Contents/Info.plist"
+export APPLICATIONS_DIR="$temp/Applications"
+export PATH="$temp/cmux.app/Contents/Resources/bin:$PATH"
 # Old Node and cmux wrappers must neither mask missing agents nor run installers.
 for binary in "$temp/old-node/bin/npm" "$temp/old-node/bin/npx" \
   "$temp/cmux-cli-shims/test/pi" "$temp/cmux-cli-shims/test/gemini" \
@@ -85,6 +97,9 @@ first_hook="$(command grep -n '^cmux hooks ' "$TEST_CALLS" | head -n 1 | cut -d:
 [[ "$first_install" -lt "$first_hook" ]]
 command grep -Fxq 'cask "obsidian"' "$temp/repo/brew/Brewfile.apps"
 command grep -Fxq 'cask "ollama-app"' "$temp/repo/brew/Brewfile.apps"
+skills_call='npx --yes skills add manaflow-ai/cmux -g -y --agent claude-code codex devin gemini-cli pi windsurf'
+[[ "$(command grep -c '^npx --yes skills add' "$TEST_CALLS")" == 2 ]]
+[[ "$(command grep -Fxc "$skills_call" "$TEST_CALLS")" == 2 ]]
 command grep -Fxq 'tap "stablyai/orca"' "$temp/repo/brew/Brewfile.apps"
 command grep -Fxq 'cask "stablyai/orca/orca"' "$temp/repo/brew/Brewfile.apps"
 

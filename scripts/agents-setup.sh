@@ -5,16 +5,6 @@ require_macos
 use_default_node
 export PATH="$HOME/.local/bin:$PATH"
 
-agent_installed() {
-  local binary
-  while IFS= read -r binary; do
-    # cmux can expose wrappers even when the underlying agent is absent.
-    case "$binary" in */cmux-cli-shims/*) continue ;; esac
-    return 0
-  done < <(type -a -p "$1")
-  return 1
-}
-
 if ! agent_installed pi; then
   npm install --global --ignore-scripts @earendil-works/pi-coding-agent
 fi

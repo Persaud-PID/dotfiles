@@ -17,5 +17,10 @@ use_default_node
 for agent in pi gemini; do
   "$cmux" hooks setup --agent "$agent" --yes || warn "Rerun cmux hooks setup --agent $agent."
 done
-npx --yes skills add manaflow-ai/cmux -g -y || warn "cmux skills installation failed."
+# The skills CLI treats any leftover config folder as an installed agent, so name the real ones.
+export PATH="$HOME/.local/bin:$PATH"
+skill_agents=()
+while IFS= read -r agent; do skill_agents+=("$agent"); done < <(skills_agents)
+log "Installing cmux skills for: ${skill_agents[*]}"
+npx --yes skills add manaflow-ai/cmux -g -y --agent "${skill_agents[@]}" || warn "cmux skills installation failed."
 "$cmux" reload-config || warn "Run cmux reload-config inside cmux to apply terminal preferences."
