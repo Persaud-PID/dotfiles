@@ -31,6 +31,6 @@ if is_macos; then
   "$REPO_DIR/scripts/cmux-setup.sh"
 else
   "$REPO_DIR/setup.sh" "${setup_args[@]}"
-  log "Reference Linux toolchain installed. Neovim needs 0.12+ from a suitable distro/source build."
+  log "Linux toolchain installed. Neovim needs 0.12+ from a suitable distro/source build."
 fi
 log "Provisioning complete. Open a new shell."

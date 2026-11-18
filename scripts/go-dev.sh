@@ -32,4 +32,4 @@ for tool in \
   go install "$tool@latest"
 done
 goenv rehash
-log "goenv Go $(go version) and the reference Go tool collection are ready."
+log "goenv Go $(go version) and the Go tool collection are ready."

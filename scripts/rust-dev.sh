@@ -7,4 +7,4 @@ rustup default stable
 command_exists rg || cargo install ripgrep --locked
 "$REPO_DIR/scripts/python-dev.sh"
 "$REPO_DIR/scripts/rye-dev.sh"
-log "Rust/rustup/Cargo and the reference Python companion tools are ready."
+log "Rust/rustup/Cargo and the Python companion tools are ready."
